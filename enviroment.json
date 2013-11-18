@@ -1,0 +1,48 @@
+{
+"level":"String",
+"play":true,
+"referencePosition":[300,200,0], 
+"referenceOrientation":0,
+"duration":62,
+"sources":{
+    "ID_0":{
+    "type":"spherical",
+    "volume":"Integer dB",
+    "mute":false,
+    "position":[50,50,0],
+    "fixed":false,
+    "orientation":5,
+    "channel":9,
+    "port":"String",
+    "change": "new",
+    "name":"souce name string",
+    "filename":"name of the playing file2"},
+    "ID_1":{
+    "type":"plane",
+    "volume":54,
+    "mute":true,
+    "change":"add",
+    "position":[500,200,0],
+    "name":"souce name string2",
+    "filename":"name of the playing file"}        
+    },
+"loudspeakers":[
+    {"id":"IDLS1",
+    "position":[0,200,0],
+    "orientation":1.57079,
+    "subwoffer":false},
+    {"id":"IDLS2",
+    "position":[0,-200,0],
+    "orientation":-1.57079,
+    "subwoffer":false},
+    {"id":"IDLS3",
+    "position":[200,0,0],
+    "orientation":0,
+    "subwoffer":false},
+    {"id":"IDLS4",
+    "position":[-200,0,0],
+    "orientation":3.14159,
+    "subwoffer":false}
+	]
+}
+

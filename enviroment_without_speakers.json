@@ -1,0 +1,21 @@
+{
+"level":"String",
+"play":false,
+"referencePosition":[300,300,0], 
+"referenceOrientation":19,
+"duration":62,
+"sources":{
+    "ID_0":{
+    "type":"spherical",
+    "volume":"Integer dB",
+    "mute":false,
+    "position":[50,50,0],
+    "fixed":false,
+    "orientation":5,
+    "channel":9,
+    "port":"String",
+    "change": "new",
+    "name":"souce name string",
+    "filename":"name of the playing file2"}      
+    }
+}
