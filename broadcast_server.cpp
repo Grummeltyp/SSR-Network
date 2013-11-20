@@ -9,6 +9,8 @@
 #include <boost/thread/condition_variable.hpp>*/
 #include <websocketpp/common/thread.hpp>
 
+#include <chrono>
+
 typedef websocketpp::server<websocketpp::config::asio> server;
 
 using websocketpp::connection_hdl;
@@ -42,6 +44,7 @@ struct action {
 };
 
 std::string scenefile;
+server::message_ptr initial_scene;
 
 
 class broadcast_server {
@@ -118,15 +121,18 @@ public:
                 m_connections.insert(a.hdl);
 				
 				//send current scene to new Subscriber
-				m_server.send(a.hdl,scenefile);
+				m_server.send(a.hdl,initial_scene);
+				
+				lock.unlock();
 				
             } else if (a.type == UNSUBSCRIBE) { //remove client from list
                 unique_lock<mutex> lock(m_connection_lock);
                 m_connections.erase(a.hdl);
+				lock.unlock();
             } else if (a.type == MESSAGE) { //store changes to scene in queue
 				unique_lock<mutex> lock(m_msg_lock);
-				m_msgs.insert(a.msg);
-			
+				m_msgs.push(a.msg);
+				lock.unlock();
 			} else {
                 // undefined.
             }
@@ -134,11 +140,18 @@ public:
     }
 	
 	void update_scene() {
-		unique_lock<mutex> lock(m_connection_lock);
+		while(1){
+			server::message_ptr messageToSend;
+			//wait for 100 ms
+			std::this_thread::sleep_for(std::chrono::milliseconds(100));
+			
+			unique_lock<mutex> lock(m_connection_lock);
+			
 		
-		con_list::iterator it;
-		for (it = m_connections.begin(); it != m_connections.end(); ++it) {
-			m_server.send(*it,a.msg);
+			con_list::iterator it;
+			for (it = m_connections.begin(); it != m_connections.end(); ++it) {
+				m_server.send(*it,messageToSend);
+			}
 		}
 		
 	}
@@ -148,7 +161,7 @@ private:
     server m_server;
     con_list m_connections;
     std::queue<action> m_actions;
-	std::queue<server::msg_ptr> m_msgs;
+	std::queue<server::message_ptr> m_msgs;
 
     mutex m_action_lock;
     mutex m_connection_lock;
@@ -160,7 +173,7 @@ int main() {
 	try {
 	::scenefile = "enviroment.json";
 	
-	m_server server;
+	broadcast_server server;
 
 	// Start a thread to run the processing loop
 	thread processing_t(bind(&broadcast_server::process_messages,&server));
