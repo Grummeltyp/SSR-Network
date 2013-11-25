@@ -34,11 +34,24 @@ enum action_type {
     MESSAGE
 };
 
+enum subscribe_topic
+{
+	SOURCES,
+	GLOBAL,
+	REFERENCE,
+	MASTERLEVEL,
+	SOURCELEVEL,
+	LOUDSPEAKERLEVEL
+};
+
 struct action {
     action(action_type t, connection_hdl h) : type(t), hdl(h) {}
     action(action_type t, server::message_ptr m) : type(t), msg(m) {}
 
     action_type type;
+	
+	subscribe_topic topic; //if type is SUBSCRIBE, this defines the topic to which the client wants to subscribe
+	
     websocketpp::connection_hdl hdl;
     server::message_ptr msg;
 };
@@ -142,6 +155,8 @@ public:
 	void update_scene() {
 		while(1){
 			server::message_ptr messageToSend;
+			std::string teststring = "This is a Test.";
+			messageToSend->set_payload(teststring);
 			//wait for 100 ms
 			std::this_thread::sleep_for(std::chrono::milliseconds(100));
 			
