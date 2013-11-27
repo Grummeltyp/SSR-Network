@@ -11,6 +11,8 @@
 
 #include <chrono>
 
+#define NUMBEROFTOPICS 6 //defines the number of possible subscribe topics
+
 typedef websocketpp::server<websocketpp::config::asio> server;
 
 using websocketpp::connection_hdl;
@@ -47,13 +49,25 @@ enum subscribe_topic
 
 struct action 
 {
-    action(action_type t, connection_hdl h) : type(t), hdl(h) {}
-    action(action_type t, server::message_ptr m) : type(t), msg(m) {}
+    action(action_type t, connection_hdl h)
+        : type(t)
+        , hdl(h)
+    {}
+    action(action_type t, server::message_ptr m)
+        : type(t)
+        , msg(m)
+    {}
+    action(action_type t, connection_hdl h,
+        std::vector<subscribe_topic> topic_vector)
+        : type(t)
+        , hdl(h)
+        , topics(topic_vector)
+    {}
 
     action_type type;
 	
-    //if type is SUBSCRIBE, this defines the topic to which the client wants to subscribe
-	subscribe_topic topic;  
+    //if type is SUBSCRIBE, this holds the topics to which the client wants to subscribe
+	std::vector<subscribe_topic> topics;  
 	
     websocketpp::connection_hdl hdl;
     server::message_ptr msg;
@@ -71,7 +85,8 @@ public:
         _m_server.init_asio();
 
         // Register handler callbacks
-        _m_server.set_open_handler(bind(&SubscribeServer::on_open,this,::_1));
+        _m_server.set_open_handler(bind(&SubscribeServer::on_open,
+            this,::_1));
         _m_server.set_close_handler(bind(&SubscribeServer::on_close,
             this,::_1));
         _m_server.set_message_handler(bind(&SubscribeServer::on_message,
@@ -155,6 +170,21 @@ public:
             { 
                 unique_lock<mutex> lock(_m_connection_lock);
                 _m_connections.insert(a.hdl);
+
+                //TODO: wait until client sends
+
+                //add the client to the corresponding subscriber lists
+                for (std::vector<subscribe_topic>::iterator it = a.topics.begin()
+                    ; it != a.topics.end(); ++it)
+                {
+                    if(*it == SOURCES) _source_subs.insert(a.hdl);
+                    else if(*it == GLOBAL) _global_subs.insert(a.hdl);
+                    else if(*it == REFERENCE) _reference_subs.insert(a.hdl);
+                    else if(*it == MASTERLEVEL) _masterlevel_subs.insert(a.hdl);
+                    else if(*it == SOURCELEVEL) _sourcelevel_subs.insert(a.hdl);
+                    else if(*it == LOUDSPEAKERLEVEL) 
+                        _loudspeakerlevel_subs.insert(a.hdl);
+                }
 				
 				//send current scene to new Subscriber
 				_m_server.send(a.hdl,initial_scene);
@@ -213,6 +243,15 @@ private:
     mutex _m_connection_lock;
 	mutex _m_msg_lock;
     condition_variable _m_action_cond;
+
+    //For every Subscribe topic, theres a seperate list containing all clients
+    //who subscribed to that topic
+    con_list _source_subs;
+    con_list _global_subs;
+    con_list _reference_subs;
+    con_list _masterlevel_subs;
+    con_list _sourcelevel_subs;
+    con_list _loudspeakerlevel_subs;
 };
 
 int main()
