@@ -155,8 +155,8 @@ public:
 	void update_scene() {
 		while(1){
 			server::message_ptr messageToSend;
-			std::string teststring = "This is a Test.";
-			messageToSend->set_payload(teststring);
+			//std::string teststring = "This is a Test.";
+			//messageToSend->set_payload(teststring);
 			//wait for 100 ms
 			std::this_thread::sleep_for(std::chrono::milliseconds(100));
 			
