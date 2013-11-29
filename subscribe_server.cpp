@@ -32,8 +32,8 @@ using websocketpp::lib::condition_variable;
 
 enum action_type 
 {
-    SUBSCRIBE,
-    UNSUBSCRIBE,
+    SIGNIN,
+    SIGNOUT,
     MESSAGE
 };
 
@@ -129,7 +129,7 @@ public:
     {
         unique_lock<mutex> lock(_m_action_lock);
         //std::cout << "on_open" << std::endl;
-        _m_actions.push(action(SUBSCRIBE,hdl));
+        _m_actions.push(action(SIGNIN,hdl));
         lock.unlock();
         _m_action_cond.notify_one();
     }
@@ -138,7 +138,7 @@ public:
     {
         unique_lock<mutex> lock(_m_action_lock);
         //std::cout << "on_close" << std::endl;
-        _m_actions.push(action(UNSUBSCRIBE,hdl));
+        _m_actions.push(action(SIGNOUT,hdl));
         lock.unlock();
         _m_action_cond.notify_one();
     }
@@ -166,7 +166,7 @@ public:
 
             lock.unlock();
 
-            if (a.type == SUBSCRIBE)  //add new Client and send it the current scene
+            if (a.type == SIGNIN)  //add new Client and send it the current scene
             { 
                 unique_lock<mutex> lock(_m_connection_lock);
                 _m_connections.insert(a.hdl);
@@ -192,7 +192,7 @@ public:
 				lock.unlock();
 				
             } 
-            else if (a.type == UNSUBSCRIBE) //remove client from list
+            else if (a.type == SIGNOUT) //remove client from list
             { 
                 unique_lock<mutex> lock(_m_connection_lock);
                 _m_connections.erase(a.hdl);
