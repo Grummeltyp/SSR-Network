@@ -39,12 +39,12 @@ enum action_type
 
 enum subscribe_topic
 {
-	SOURCES,
-	GLOBAL,
-	REFERENCE,
-	MASTERLEVEL,
-	SOURCELEVEL,
-	LOUDSPEAKERLEVEL
+  SOURCES,
+  GLOBAL,
+  REFERENCE,
+  MASTERLEVEL,
+  SOURCELEVEL,
+  LOUDSPEAKERLEVEL
 };
 
 struct action 
@@ -82,14 +82,14 @@ public:
   SubscribeServer() 
   {
     // Initialize Asio Transport
-    _m_server.init_asio();
+   _server.init_asio();
 
     // Register handler callbacks
-    _m_server.set_open_handler(bind(&SubscribeServer::on_open,
+   _server.set_open_handler(bind(&SubscribeServer::on_open,
       this,::_1));
-    _m_server.set_close_handler(bind(&SubscribeServer::on_close,
+   _server.set_close_handler(bind(&SubscribeServer::on_close,
       this,::_1));
-    _m_server.set_message_handler(bind(&SubscribeServer::on_message,
+   _server.set_message_handler(bind(&SubscribeServer::on_message,
       this,::_1,::_2));
   }
 
@@ -100,15 +100,15 @@ public:
   void run(uint16_t port) 
   {
     // listen on specified port
-    _m_server.listen(port);
+   _server.listen(port);
 
     // Start the server accept loop
-    _m_server.start_accept();
+   _server.start_accept();
 
     // Start the ASIO io_service run loop
     try 
     {
-      _m_server.run();
+     _server.run();
     }
 
     catch (const std::exception & e) 
@@ -127,49 +127,57 @@ public:
 
   void on_open(connection_hdl hdl) 
   {
-    unique_lock<mutex> lock(_m_action_lock);
-    //std::cout << "on_open" << std::endl;
-    _m_actions.push(action(SIGNIN,hdl));
-    lock.unlock();
-    _m_action_cond.notify_one();
+    _connections.insert(hdl);
+
+
+    // unique_lock<mutex> lock(_action_lock);
+    // //std::cout << "on_open" << std::endl;
+    // _actions.push(action(SIGNIN,hdl));
+    // lock.unlock();
+    // _action_cond.notify_one();
   }
 
   void on_close(connection_hdl hdl) 
   {
-    unique_lock<mutex> lock(_m_action_lock);
-    //std::cout << "on_close" << std::endl;
-    _m_actions.push(action(SIGNOUT,hdl));
-    lock.unlock();
-    _m_action_cond.notify_one();
+    _connections.erase(hdl);
+
+
+    // unique_lock<mutex> lock(_action_lock);
+    // //std::cout << "on_close" << std::endl;
+    // _actions.push(action(SIGNOUT,hdl));
+    // lock.unlock();
+    // _action_cond.notify_one();
   }
 
   void on_message(connection_hdl hdl, server::message_ptr msg) 
   {
-    // queue message up for sending by processing thread
-    unique_lock<mutex> lock(_m_action_lock);
-    //std::cout << "on_message" << std::endl;
-    _m_actions.push(action(MESSAGE,msg));
-    lock.unlock();
-    _m_action_cond.notify_one();
+    std::string incoming = msg->get_payload();
+
+    // // queue message up for sending by processing thread
+    // unique_lock<mutex> lock(_action_lock);
+    // //std::cout << "on_message" << std::endl;
+    // _actions.push(action(MESSAGE,msg));
+    // lock.unlock();
+    // _action_cond.notify_one();
   }
 
   void process_messages()
   {
     while(1) 
     {
-      unique_lock<mutex> lock(_m_action_lock);
+      unique_lock<mutex> lock(_action_lock);
 
-      while(_m_actions.empty()) _m_action_cond.wait(lock);
+      while(_actions.empty()) _action_cond.wait(lock);
 
-      action a = _m_actions.front();
-      _m_actions.pop();
+      action a = _actions.front();
+      _actions.pop();
 
       lock.unlock();
 
       if (a.type == SIGNIN)  //add new Client and send it the current scene
       { 
-        unique_lock<mutex> lock(_m_connection_lock);
-        _m_connections.insert(a.hdl);
+        unique_lock<mutex> lock(_connection_lock);
+        _connections.insert(a.hdl);
 
         //TODO: wait until client sends
 
@@ -186,21 +194,21 @@ public:
         }
 	
 		    //send current scene to new Subscriber
-		    _m_server.send(a.hdl,initial_scene);
+		   _server.send(a.hdl,initial_scene);
 		
 		    lock.unlock();
 		
       } 
       else if (a.type == SIGNOUT) //remove client from list
       { 
-        unique_lock<mutex> lock(_m_connection_lock);
-        _m_connections.erase(a.hdl);
+        unique_lock<mutex> lock(_connection_lock);
+        _connections.erase(a.hdl);
 		    lock.unlock();
       } 
       else if (a.type == MESSAGE) //store changes to scene in queue
       { 
-		    unique_lock<mutex> lock(_m_msg_lock);
-		    _m_msgs.push(a.msg);
+		    unique_lock<mutex> lock(_msg_lock);
+		    _msgs.push(a.msg);
 		    lock.unlock();
       } 
       else 
@@ -220,28 +228,28 @@ void update_scene()
 		//wait for 100 ms
 		std::this_thread::sleep_for(std::chrono::milliseconds(100));
 		
-		unique_lock<mutex> lock(_m_connection_lock);
+		unique_lock<mutex> lock(_connection_lock);
 		
 	
 		con_list::iterator it;
-		for (it = _m_connections.begin(); it != _m_connections.end(); ++it) 
+		for (it = _connections.begin(); it != _connections.end(); ++it) 
           {
-              _m_server.send(*it,messageToSend);
+             _server.send(*it,messageToSend);
           }
 	}
 }
 private:
     typedef std::set<connection_hdl,std::owner_less<connection_hdl>> con_list;
 
-    server _m_server;
-    con_list _m_connections;
-    std::queue<action> _m_actions;
-	std::queue<server::message_ptr> _m_msgs;
+    server _server;
+    con_list _connections;
+    std::queue<action> _actions;
+	std::queue<server::message_ptr> _msgs;
 
-    mutex _m_action_lock;
-    mutex _m_connection_lock;
-	mutex _m_msg_lock;
-    condition_variable _m_action_cond;
+    mutex _action_lock;
+    mutex _connection_lock;
+	mutex _msg_lock;
+    condition_variable _action_cond;
 
     //For every Subscribe topic, theres a seperate list containing all clients
     //who subscribed to that topic
