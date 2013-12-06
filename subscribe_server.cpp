@@ -13,6 +13,8 @@
 
 #define NUMBEROFTOPICS 6 //defines the number of possible subscribe topics
 
+#include "jsonparser.h"
+
 typedef websocketpp::server<websocketpp::config::asio> server;
 
 using websocketpp::connection_hdl;
