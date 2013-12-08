@@ -13,75 +13,19 @@
 
 #define NUMBEROFTOPICS 6 //defines the number of possible subscribe topics
 
+#include "actions.h"
 #include "jsonparser.h"
 
-typedef websocketpp::server<websocketpp::config::asio> server;
 
-using websocketpp::connection_hdl;
-using websocketpp::lib::placeholders::_1;
-using websocketpp::lib::placeholders::_2;
-using websocketpp::lib::bind;
 
-using websocketpp::lib::thread;
-using websocketpp::lib::mutex;
-using websocketpp::lib::unique_lock;
-using websocketpp::lib::condition_variable;
-
-/* on_open insert connection_hdl into channel
- * on_close remove connection_hdl from channel
- * on_message queue send to all channels
- */
-
-enum action_type 
-{
-  SIGNIN,
-  SIGNOUT,
-  MESSAGE
-};
-
-enum subscribe_topic
-{
-  SOURCES,
-  GLOBAL,
-  REFERENCE,
-  MASTERLEVEL,
-  SOURCELEVEL,
-  LOUDSPEAKERLEVEL
-};
-
-struct action 
-{
-  action(action_type t, connection_hdl h)
-    : type(t)
-    , hdl(h)
-  {}
-  action(action_type t, server::message_ptr m)
-    : type(t)
-    , msg(m)
-  {}
-  action(action_type t, connection_hdl h,
-    std::vector<subscribe_topic> topic_vector)
-    : type(t)
-    , hdl(h)
-    , topics(topic_vector)
-  {}
-
-  action_type type;
-
-  //if type is SUBSCRIBE, this holds the topics to which the client wants to subscribe
-  std::vector<subscribe_topic> topics;  
-
-  websocketpp::connection_hdl hdl;
-  server::message_ptr msg;
-};
 
 std::string scenefile;
 server::message_ptr initial_scene;
 
-class SubscribeServer 
+class SubscribeServer
 {
 public:
-  SubscribeServer() 
+  SubscribeServer()
   {
     // Initialize Asio Transport
    _server.init_asio();
@@ -99,13 +43,13 @@ public:
   *
   *
   **/
-  void run(uint16_t port) 
+  void run(uint16_t port)
   {
     // listen on specified port
-   _server.listen(port);
+    _server.listen(port);
 
     // Start the server accept loop
-   _server.start_accept();
+    _server.start_accept();
 
     // Start the ASIO io_service run loop
     try 
@@ -113,7 +57,7 @@ public:
      _server.run();
     }
 
-    catch (const std::exception & e) 
+    catch (const std::exception & e)
     {
       std::cout << e.what() << std::endl;
     } 
@@ -124,6 +68,44 @@ public:
     catch (...) 
     {
       std::cout << "other exception" << std::endl;
+    }
+  }
+
+  void processActions(struct action a)
+  {
+    if (a.type == SUBSCRIBE)
+    {
+      for(std::vector<subscribe_topic>::iterator it = a.topics.begin()
+        ; it != a.topics.end()
+        ; ++it)
+      {
+        if (*it == SOURCES) _source_subs.insert(a.hdl);
+        else if (*it == GLOBAL) _global_subs.insert(a.hdl);
+        else if (*it == REFERENCE) _reference_subs.insert(a.hdl);
+        else if (*it == MASTERLEVEL) _masterlevel_subs.insert(a.hdl);
+        else if (*it == SOURCELEVEL) _sourcelevel_subs.insert(a.hdl);
+        else if (*it == LOUDSPEAKERLEVEL) _loudspeakerlevel_subs.insert(a.hdl);
+      }
+    }
+
+    else if (a.type == UNSUBSCRIBE)
+    {
+      for(std::vector<subscribe_topic>::iterator it = a.topics.begin()
+        ; it != a.topics.end()
+        ; ++it)
+      {
+        if (*it == SOURCES) _source_subs.erase(a.hdl);
+        else if (*it == GLOBAL) _global_subs.erase(a.hdl);
+        else if (*it == REFERENCE) _reference_subs.erase(a.hdl);
+        else if (*it == MASTERLEVEL) _masterlevel_subs.erase(a.hdl);
+        else if (*it == SOURCELEVEL) _sourcelevel_subs.erase(a.hdl);
+        else if (*it == LOUDSPEAKERLEVEL) _loudspeakerlevel_subs.erase(a.hdl);
+      }
+    }
+
+    else if (a.type == MESSAGE)
+    {
+      //todo
     }
   }
 
@@ -139,7 +121,7 @@ public:
     // _action_cond.notify_one();
   }
 
-  void on_close(connection_hdl hdl) 
+  void on_close(connection_hdl hdl)
   {
     _connections.erase(hdl);
 
@@ -151,9 +133,13 @@ public:
     // _action_cond.notify_one();
   }
 
-  void on_message(connection_hdl hdl, server::message_ptr msg) 
+
+
+  void on_message(connection_hdl hdl, server::message_ptr msg)
   {
     std::string incoming = msg->get_payload();
+
+
 
     // // queue message up for sending by processing thread
     // unique_lock<mutex> lock(_action_lock);
@@ -163,82 +149,82 @@ public:
     // _action_cond.notify_one();
   }
 
-  void process_messages()
-  {
-    while(1) 
-    {
-      unique_lock<mutex> lock(_action_lock);
+  // void process_messages()
+  // {
+  //   while(1)
+  //   {
+  //     unique_lock<mutex> lock(_action_lock);
 
-      while(_actions.empty()) _action_cond.wait(lock);
+  //     while(_actions.empty()) _action_cond.wait(lock);
 
-      action a = _actions.front();
-      _actions.pop();
+  //     action a = _actions.front();
+  //     _actions.pop();
 
-      lock.unlock();
+  //     lock.unlock();
 
-      if (a.type == SIGNIN)  //add new Client and send it the current scene
-      { 
-        unique_lock<mutex> lock(_connection_lock);
-        _connections.insert(a.hdl);
+  //     if (a.type == SIGNIN)  //add new Client and send it the current scene
+  //     { 
+  //       unique_lock<mutex> lock(_connection_lock);
+  //       _connections.insert(a.hdl);
 
-        //TODO: wait until client sends
+  //       //TODO: wait until client sends
 
-        //add the client to the corresponding subscriber lists
-        for (std::vector<subscribe_topic>::iterator it = a.topics.begin()
-          ; it != a.topics.end(); ++it)
-        {
-          if(*it == SOURCES) _source_subs.insert(a.hdl);
-          else if(*it == GLOBAL) _global_subs.insert(a.hdl);
-          else if(*it == REFERENCE) _reference_subs.insert(a.hdl);
-          else if(*it == MASTERLEVEL) _masterlevel_subs.insert(a.hdl);
-          else if(*it == SOURCELEVEL) _sourcelevel_subs.insert(a.hdl);
-          else if(*it == LOUDSPEAKERLEVEL) _loudspeakerlevel_subs.insert(a.hdl);
-        }
+  //       //add the client to the corresponding subscriber lists
+  //       for (std::vector<subscribe_topic>::iterator it = a.topics.begin()
+  //         ; it != a.topics.end(); ++it)
+  //       {
+  //         if(*it == SOURCES) _source_subs.insert(a.hdl);
+  //         else if(*it == GLOBAL) _global_subs.insert(a.hdl);
+  //         else if(*it == REFERENCE) _reference_subs.insert(a.hdl);
+  //         else if(*it == MASTERLEVEL) _masterlevel_subs.insert(a.hdl);
+  //         else if(*it == SOURCELEVEL) _sourcelevel_subs.insert(a.hdl);
+  //         else if(*it == LOUDSPEAKERLEVEL) _loudspeakerlevel_subs.insert(a.hdl);
+  //       }
 	
-		    //send current scene to new Subscriber
-		   _server.send(a.hdl,initial_scene);
+		//     //send current scene to new Subscriber
+		//    _server.send(a.hdl,initial_scene);
 		
-		    lock.unlock();
+		//     lock.unlock();
 		
-      } 
-      else if (a.type == SIGNOUT) //remove client from list
-      { 
-        unique_lock<mutex> lock(_connection_lock);
-        _connections.erase(a.hdl);
-		    lock.unlock();
-      } 
-      else if (a.type == MESSAGE) //store changes to scene in queue
-      { 
-		    unique_lock<mutex> lock(_msg_lock);
-		    _msgs.push(a.msg);
-		    lock.unlock();
-      } 
-      else 
-      {
-        // undefined.
-      }
-    }
-  }
+  //     } 
+  //     else if (a.type == SIGNOUT) //remove client from list
+  //     { 
+  //       unique_lock<mutex> lock(_connection_lock);
+  //       _connections.erase(a.hdl);
+		//     lock.unlock();
+  //     } 
+  //     else if (a.type == MESSAGE) //store changes to scene in queue
+  //     { 
+		//     unique_lock<mutex> lock(_msg_lock);
+		//     _msgs.push(a.msg);
+		//     lock.unlock();
+  //     } 
+  //     else 
+  //     {
+  //       // undefined.
+  //     }
+  //   }
+  // }
 
 void update_scene() 
+{
+  while (1)
   {
-	while (1)
-      {
-		server::message_ptr messageToSend;
-		//std::string teststring = "This is a Test.";
-		//messageToSend->set_payload(teststring);
-		//wait for 100 ms
-		std::this_thread::sleep_for(std::chrono::milliseconds(100));
-		
-		unique_lock<mutex> lock(_connection_lock);
-		
-	
-		con_list::iterator it;
-		for (it = _connections.begin(); it != _connections.end(); ++it) 
-          {
-             _server.send(*it,messageToSend);
-          }
-	}
+    server::message_ptr messageToSend;
+    //std::string teststring = "This is a Test.";
+    //messageToSend->set_payload(teststring);
+    //wait for 100 ms
+    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+
+    unique_lock<mutex> lock(_connection_lock);
+
+
+    con_list::iterator it;
+    for (it = _connections.begin(); it != _connections.end(); ++it)
+    {
+      _server.send(*it,messageToSend);
+    }
+  }
 }
 private:
     typedef std::set<connection_hdl,std::owner_less<connection_hdl>> con_list;
@@ -246,11 +232,11 @@ private:
     server _server;
     con_list _connections;
     std::queue<action> _actions;
-	std::queue<server::message_ptr> _msgs;
+    std::queue<server::message_ptr> _msgs;
 
     mutex _action_lock;
     mutex _connection_lock;
-	mutex _msg_lock;
+    mutex _msg_lock;
     condition_variable _action_cond;
 
     //For every Subscribe topic, theres a seperate list containing all clients
@@ -265,31 +251,31 @@ private:
 
 int main()
 {
-	try
+  try
     {
-	::scenefile = "enviroment.json";
-	
-	SubscribeServer server;
+  ::scenefile = "enviroment.json";
 
-	// Start a thread to run the processing loop
-	thread processing_t(bind(&SubscribeServer::process_messages,&server));
-		
-	// Start a thread to run the update loop
-	thread update_t(bind(&SubscribeServer::update_scene,&server));
+  SubscribeServer server;
 
-	// Run the asio loop with the main thread
-    std::cout << "TestServer running..." << std::endl;
-	server.run(9002);
-  
+  // Start a thread to run the processing loop
+  // thread processing_t(bind(&SubscribeServer::process_messages,&server));
 
-	processing_t.join();
-	update_t.join();
+  // Start a thread to run the update loop
+  thread update_t(bind(&SubscribeServer::update_scene,&server));
 
-	} 
-    catch  (std::exception & e) 
-    {
-       std::cout << e.what() << std::endl;
-    }
+  // Run the asio loop with the main thread
+  std::cout << "TestServer running..." << std::endl;
+  server.run(9002);
+
+
+  // processing_t.join();
+  update_t.join();
+
+  }
+  catch (std::exception & e) 
+  {
+    std::cout << e.what() << std::endl;
+  }
 
 }
 
