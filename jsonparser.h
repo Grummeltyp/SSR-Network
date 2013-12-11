@@ -18,27 +18,27 @@ action parseMessage(std::string load, connection_hdl con)
       std::cout  << "Failed to parse incoming Message\n"
         << reader.getFormatedErrorMessages();
       }
-  
 
-    std::string type = root.get("type", "INVALID").asString();
 
-    if (type == "SUBSCRIBE" || type == "UNSUBSCRIBE")
+    std::string type = root.get("Type", "INVALID").asString();
+
+    if (type == "Subscribe" || type == "Unsubscribe")
     {
       bool sub = true;
-      if(type == "UNSUBSCRIBE") sub = false;
+      if(type == "Unsubscribe") sub = false;
 
-      Json::Value topics = root["topics"];
+      Json::Value topics = root["Topics"];
 
       std::vector<subscribe_topic> topic_v;
       for (unsigned int i = 0; i < topics.size(); ++i)
       {
         std::string current = topics[i].asString();
-        if (current == "SOURCES") topic_v[i] = SOURCES;
-        else if (current == "GLOBAL") topic_v[i] = GLOBAL;
-        else if (current == "REFERENCE") topic_v[i] = REFERENCE;
-        else if (current == "MASTERLEVEL") topic_v[i] = MASTERLEVEL;
-        else if (current == "SOURCELEVEL") topic_v[i] = SOURCELEVEL;
-        else if (current == "LOUDSPEAKERLEVEL") topic_v[i] = LOUDSPEAKERLEVEL;
+        if (current == "Sources") topic_v[i] = SOURCES;
+        else if (current == "Global") topic_v[i] = GLOBAL;
+        else if (current == "Reference") topic_v[i] = REFERENCE;
+        else if (current == "Masterlevel") topic_v[i] = MASTERLEVEL;
+        else if (current == "Sourcelevel") topic_v[i] = SOURCELEVEL;
+        else if (current == "Loudspeakerlevel") topic_v[i] = LOUDSPEAKERLEVEL;
         else
         {
           throw "Invalid Topic Name\n";
@@ -48,7 +48,7 @@ action parseMessage(std::string load, connection_hdl con)
       return action(UNSUBSCRIBE, con, topic_v);
     }
 
-    else if (type == "MESSAGE")
+    else if (type == "Message")
     {
       //todo
     }

@@ -28,18 +28,18 @@ public:
   SubscribeServer()
   {
     // Initialize Asio Transport
-   _server.init_asio();
+  _server.init_asio();
 
     // Register handler callbacks
-   _server.set_open_handler(bind(&SubscribeServer::on_open,
-      this,::_1));
-   _server.set_close_handler(bind(&SubscribeServer::on_close,
-      this,::_1));
-   _server.set_message_handler(bind(&SubscribeServer::on_message,
-      this,::_1,::_2));
+  _server.set_open_handler(bind(&SubscribeServer::on_open,
+    this,::_1));
+  _server.set_close_handler(bind(&SubscribeServer::on_close,
+    this,::_1));
+  _server.set_message_handler(bind(&SubscribeServer::on_message,
+    this,::_1,::_2));
   }
 
-  /** 
+  /**
   *
   *
   **/
@@ -52,7 +52,7 @@ public:
     _server.start_accept();
 
     // Start the ASIO io_service run loop
-    try 
+    try
     {
      _server.run();
     }
@@ -60,12 +60,12 @@ public:
     catch (const std::exception & e)
     {
       std::cout << e.what() << std::endl;
-    } 
+    }
     catch (websocketpp::lib::error_code e)
     {
       std::cout << e.message() << std::endl;
     }
-    catch (...) 
+    catch (...)
     {
       std::cout << "other exception" << std::endl;
     }
@@ -109,7 +109,7 @@ public:
     }
   }
 
-  void on_open(connection_hdl hdl) 
+  void on_open(connection_hdl hdl)
   {
     _connections.insert(hdl);
 
@@ -163,7 +163,7 @@ public:
   //     lock.unlock();
 
   //     if (a.type == SIGNIN)  //add new Client and send it the current scene
-  //     { 
+  //     {
   //       unique_lock<mutex> lock(_connection_lock);
   //       _connections.insert(a.hdl);
 
@@ -180,33 +180,33 @@ public:
   //         else if(*it == SOURCELEVEL) _sourcelevel_subs.insert(a.hdl);
   //         else if(*it == LOUDSPEAKERLEVEL) _loudspeakerlevel_subs.insert(a.hdl);
   //       }
-	
+
 		//     //send current scene to new Subscriber
 		//    _server.send(a.hdl,initial_scene);
-		
+
 		//     lock.unlock();
-		
-  //     } 
+
+  //     }
   //     else if (a.type == SIGNOUT) //remove client from list
-  //     { 
+  //     {
   //       unique_lock<mutex> lock(_connection_lock);
   //       _connections.erase(a.hdl);
 		//     lock.unlock();
-  //     } 
+  //     }
   //     else if (a.type == MESSAGE) //store changes to scene in queue
-  //     { 
+  //     {
 		//     unique_lock<mutex> lock(_msg_lock);
 		//     _msgs.push(a.msg);
 		//     lock.unlock();
-  //     } 
-  //     else 
+  //     }
+  //     else
   //     {
   //       // undefined.
   //     }
   //   }
   // }
 
-void update_scene() 
+void update_scene()
 {
   while (1)
   {
@@ -272,7 +272,7 @@ int main()
   update_t.join();
 
   }
-  catch (std::exception & e) 
+  catch (std::exception & e)
   {
     std::cout << e.what() << std::endl;
   }
