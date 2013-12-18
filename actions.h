@@ -35,17 +35,73 @@ enum subscribe_topic
 /**
  * The value of a Json Key is one of map_value's elements
  */
-enum map_value
+struct map_value_data
 {
-  bool boolean;
-  std::string string;
   int integer;
+  bool b;
+  std::string string;
   std::vector<int> integer_v;
   double decimal;
   std::vector<double> decimal_v;
   Json::Value json;
-}
+};
 
+enum map_value_type
+{
+  BOOL,
+  STRING,
+  INTEGER,
+  DOUBLE,
+  INTARRAY
+};
+
+template <typename T>
+struct getValueImp;
+
+typedef struct map_value
+{
+  map_value_type type;
+  map_value_data data;
+
+  template <typename T>
+  T getValue() {return getValueImp<T>::getValue(this);}
+} map_value;
+
+
+/* This needs to be specialised for every possible type of map_value*/
+template <typename T>
+struct getValueImp
+{
+  static T getValue(map_value* const value);
+};
+
+/*Specialisation for bool type*/
+template<>
+struct getValueImp<bool>
+{
+  static bool getValue(map_value* const value) {return value->data.b;}
+};
+
+/*Specialisation for bool type*/
+template<>
+struct getValueImp<std::string>
+{
+  static std::string getValue(map_value* const value) {return value->data.string;}
+};
+
+/*Specialisation for bool type*/
+template<>
+struct getValueImp<int>
+{
+  static int getValue(map_value* const value) {return value->data.integer;}
+};
+
+/*Specialisation for bool type*/
+template<>
+struct getValueImp<double>
+{
+  static double getValue(map_value* const value) {return value->data.decimal;}
+};
 //for the different kinds of messages
 struct action
 {

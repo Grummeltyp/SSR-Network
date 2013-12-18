@@ -3,6 +3,30 @@
 
 #include "actions.h"
 
+
+/* create a map for making the parameter names switchable*/
+std::map<std::string, int> paramNumbers
+{
+  {"level", 0},
+  {"type", 1},
+  {"port", 2},
+  {"change", 3},
+  {"name", 4},
+  {"filname", 5},
+  {"id", 6},
+  {"play", 7},
+  {"mute", 8},
+  {"fixed", 9},
+  {"subwoofer", 10},
+  {"referenceOrientation", 11},
+  {"orientation", 12},
+  {"duration", 13},
+  {"volume", 14},
+  {"channel", 15},
+  {"referencePosition", 16},
+  {"position", 17}
+};
+
 action parseMessage(std::string load, connection_hdl con)
 {
   Json::Value root;
@@ -14,7 +38,7 @@ action parseMessage(std::string load, connection_hdl con)
     if (!parsingSuccessful)
       {
       // report to the user the failure and their locations in the JSON.
-      std::cout  << "Failed to parse incoming Message\n"
+      std::cout << "Failed to parse incoming Message\n"
         << reader.getFormatedErrorMessages();
       }
 
@@ -49,8 +73,8 @@ action parseMessage(std::string load, connection_hdl con)
 
     else if (type == "Message")
     {
-      Json::Value msg_load = root.get(1, NULL);
-      if (msg_load == NULL)
+      Json::Value msg_load = root.get(1, new Json::Value(0));
+      if (msg_load.isNull())
       {
         throw "Message Type specified, but no parameters given.\n";
       }
@@ -58,25 +82,83 @@ action parseMessage(std::string load, connection_hdl con)
 
       std::map<std::string, map_value> params;
 
-      for (int Json::Value::Members::iterator it = param_names.begin()
-        ; it < param_names.end(); ++it)
+      for (Json::Value::Members::iterator it = param_names.begin()
+        ; it != param_names.end(); ++it)
       {
-        switch *it
+        std::pair<std::string, map_value> newVal;
+
+        switch (paramNumbers[*it])
         {
-          case "level":
-          case "type":
-          case "port":
-          case "change":
-          case "name":
-          case "filename":
-          case "id":
-            if(!msg_load[*it].isString())
+          case 0:
+          case 1:
+          case 2:
+          case 3:
+          case 4:
+          case 5:
+          case 6:
+            if(msg_load[*it].isString())
             {
-              throw "Wrong format in Json Message\n";
+              newVal.first = *it;
+              newVal.second.type = STRING;
+              newVal.second.data.string = msg_load[*it].asString();
+              break;
             }
-          //TODO
+            throw "Wrong format for string value\n";
+
+          case 7:
+          case 8:
+          case 9:
+          case 10:
+            if(msg_load[*it].isBool())
+            {
+              newVal.first = *it;
+              newVal.second.type = BOOL;
+              newVal.second.data.b = msg_load[*it].asBool();
+              break;
+            }
+            throw "Wrong format for bool value\n";
+
+          case 11:
+          case 12:
+          case 13:
+          case 14:
+            if(msg_load[*it].isDouble())
+            {
+              newVal.first = *it;
+              newVal.second.type = DOUBLE;
+              newVal.second.data.decimal = msg_load[*it].asDouble();
+              break;
+            }
+          case 15:
+            if(msg_load[*it].isInt())
+            {
+              newVal.first = *it;
+              newVal.second.type = INTEGER;
+              newVal.second.data.integer = msg_load[*it].asInt();
+              break;
+            }
+            throw "Wrong format for numeric value\n";
+
+          case 16:
+          case 17:
+            if(msg_load[*it].isArray())
+            {
+              newVal.first = *it;
+              newVal.second.type = INTARRAY;
+              for (unsigned int i = 0; i < sizeof(msg_load[*it]); ++i)
+              {
+                newVal.second.data.integer_v[i] = msg_load[*it][i].asInt();
+              }
+              break;
+            }
+            throw "Wrong format for array value\n";
+          default:
+            throw "Wrong Key.\n";
         }
+        /* Hint: If a key is inserted twice, the second insertion is ignored */
+        params.insert(newVal);
       }
+      return action(MESSAGE, params);
     }
     else
       throw "Mismatched Actiontype\n";

@@ -31,12 +31,14 @@ public:
   _server.init_asio();
 
     // Register handler callbacks
-  _server.set_open_handler(bind(&SubscribeServer::on_open,
-    this,::_1));
-  _server.set_close_handler(bind(&SubscribeServer::on_close,
-    this,::_1));
-  _server.set_message_handler(bind(&SubscribeServer::on_message,
-    this,::_1,::_2));
+  _server.set_open_handler(bind(&SubscribeServer::on_open
+    , this, ::_1));
+  _server.set_close_handler(bind(&SubscribeServer::on_close
+    , this, ::_1));
+  _server.set_message_handler(bind(&SubscribeServer::on_message
+    , this, ::_1, ::_2));
+  _server.set_http_handler(bind(&SubscribeServer::on_http
+    , this, ::_1));
   }
 
   /**
@@ -71,46 +73,14 @@ public:
     }
   }
 
-  void processActions(struct action a)
+  void on_http(connection_hdl hdl)
   {
-    if (a.type == SUBSCRIBE)
-    {
-      for(std::vector<subscribe_topic>::iterator it = a.topics.begin()
-        ; it != a.topics.end()
-        ; ++it)
-      {
-        if (*it == SOURCES) _source_subs.insert(a.hdl);
-        else if (*it == GLOBAL) _global_subs.insert(a.hdl);
-        else if (*it == REFERENCE) _reference_subs.insert(a.hdl);
-        else if (*it == MASTERLEVEL) _masterlevel_subs.insert(a.hdl);
-        else if (*it == SOURCELEVEL) _sourcelevel_subs.insert(a.hdl);
-        else if (*it == LOUDSPEAKERLEVEL) _loudspeakerlevel_subs.insert(a.hdl);
-      }
-    }
-
-    else if (a.type == UNSUBSCRIBE)
-    {
-      for(std::vector<subscribe_topic>::iterator it = a.topics.begin()
-        ; it != a.topics.end()
-        ; ++it)
-      {
-        if (*it == SOURCES) _source_subs.erase(a.hdl);
-        else if (*it == GLOBAL) _global_subs.erase(a.hdl);
-        else if (*it == REFERENCE) _reference_subs.erase(a.hdl);
-        else if (*it == MASTERLEVEL) _masterlevel_subs.erase(a.hdl);
-        else if (*it == SOURCELEVEL) _sourcelevel_subs.erase(a.hdl);
-        else if (*it == LOUDSPEAKERLEVEL) _loudspeakerlevel_subs.erase(a.hdl);
-      }
-    }
-
-    else if (a.type == MESSAGE)
-    {
-      //todo
-    }
+    std::cout << "Sorry, Websocket Connections only.\n" << std::endl;
   }
 
   void on_open(connection_hdl hdl)
   {
+    std::cout << "on_open" <<std::endl;
     _connections.insert(hdl);
 
 
@@ -123,6 +93,7 @@ public:
 
   void on_close(connection_hdl hdl)
   {
+    std::cout << "on_close" <<std::endl;
     _connections.erase(hdl);
 
 
@@ -137,9 +108,11 @@ public:
 
   void on_message(connection_hdl hdl, server::message_ptr msg)
   {
+    std::cout << "on_message" <<std::endl;
     std::string incoming = msg->get_payload();
+    struct action newAction = parseMessage(incoming, hdl);
 
-
+    process_action(newAction);
 
     // // queue message up for sending by processing thread
     // unique_lock<mutex> lock(_action_lock);
@@ -147,6 +120,61 @@ public:
     // _actions.push(action(MESSAGE,msg));
     // lock.unlock();
     // _action_cond.notify_one();
+  }
+
+  void process_action(struct action a)
+  {
+    if (a.type == SUBSCRIBE)
+    {
+
+      std::cout << "Adding Client to Subscriberlists." <<std::endl;
+
+      for (std::vector<subscribe_topic>::iterator it = a.topics.begin()
+        ; it != a.topics.end(); ++it)
+      {
+        if(*it == SOURCES) _source_subs.insert(a.hdl);
+        else if(*it == GLOBAL) _global_subs.insert(a.hdl);
+        else if(*it == REFERENCE) _reference_subs.insert(a.hdl);
+        else if(*it == MASTERLEVEL) _masterlevel_subs.insert(a.hdl);
+        else if(*it == SOURCELEVEL) _sourcelevel_subs.insert(a.hdl);
+        else if(*it == LOUDSPEAKERLEVEL) _loudspeakerlevel_subs.insert(a.hdl);
+      }
+    }
+
+    if (a.type == UNSUBSCRIBE)
+    {
+
+      std::cout << "Removing Client from Subscriberlists." <<std::endl;
+
+
+      for (std::vector<subscribe_topic>::iterator it = a.topics.begin()
+        ; it != a.topics.end(); ++it)
+      {
+        if(*it == SOURCES) _source_subs.erase(a.hdl);
+        else if(*it == GLOBAL) _global_subs.erase(a.hdl);
+        else if(*it == REFERENCE) _reference_subs.erase(a.hdl);
+        else if(*it == MASTERLEVEL) _masterlevel_subs.erase(a.hdl);
+        else if(*it == SOURCELEVEL) _sourcelevel_subs.erase(a.hdl);
+        else if(*it == LOUDSPEAKERLEVEL) _loudspeakerlevel_subs.erase(a.hdl);
+      }
+    }
+
+    if (a.type == MESSAGE)
+    {
+      for (std::map<std::string, map_value>::iterator it = a.load.begin()
+        ; it != a.load.end(); ++it)
+      {
+        std::cout << it->first << " : ";
+        if (it->second.type == BOOL)
+          std::cout << it->second.getValue<bool>() << std::endl;
+        if (it->second.type == STRING)
+          std::cout << it->second.getValue<std::string>() << std::endl;
+        if (it->second.type == INTEGER)
+          std::cout << it->second.getValue<int>() << std::endl;
+        if (it->second.type == DOUBLE)
+          std::cout << it->second.getValue<double>() << std::endl;
+      }
+    }
   }
 
   // void process_messages()
@@ -173,12 +201,7 @@ public:
   //       for (std::vector<subscribe_topic>::iterator it = a.topics.begin()
   //         ; it != a.topics.end(); ++it)
   //       {
-  //         if(*it == SOURCES) _source_subs.insert(a.hdl);
-  //         else if(*it == GLOBAL) _global_subs.insert(a.hdl);
-  //         else if(*it == REFERENCE) _reference_subs.insert(a.hdl);
-  //         else if(*it == MASTERLEVEL) _masterlevel_subs.insert(a.hdl);
-  //         else if(*it == SOURCELEVEL) _sourcelevel_subs.insert(a.hdl);
-  //         else if(*it == LOUDSPEAKERLEVEL) _loudspeakerlevel_subs.insert(a.hdl);
+
   //       }
 
 		//     //send current scene to new Subscriber
