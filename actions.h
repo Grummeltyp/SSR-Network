@@ -1,6 +1,8 @@
 #ifndef actions_h_
 #define actions_h_
 
+#include <json/json.h>
+
 typedef websocketpp::server<websocketpp::config::asio> server;
 
 using websocketpp::connection_hdl;
@@ -13,7 +15,7 @@ using websocketpp::lib::mutex;
 using websocketpp::lib::unique_lock;
 using websocketpp::lib::condition_variable;
 
-enum action_type 
+enum action_type
 {
   SUBSCRIBE,
   UNSUBSCRIBE,
@@ -30,25 +32,41 @@ enum subscribe_topic
   LOUDSPEAKERLEVEL
 };
 
+/**
+ * The value of a Json Key is one of map_value's elements
+ */
+enum map_value
+{
+  bool boolean;
+  std::string string;
+  int integer;
+  std::vector<int> integer_v;
+  double decimal;
+  std::vector<double> decimal_v;
+  Json::Value json;
+}
+
 //for the different kinds of messages
-struct action 
+struct action
 {
   //constructor for subscribe/unsubscribe messages
-  action(action_type t, connection_hdl h, std::vector<subscribe_topic> topics)
+  action(action_type t, connection_hdl h, std::vector<subscribe_topic> top)
     : type(t)
     , hdl(h)
-    , topics(topics)
+    , topics(top)
   {}
   //constructor for other messages
-  action(action_type t, server::message_ptr m)
+  action(action_type t, std::map<std::string, map_value> l)
     : type(t)
-   // , msg_root(m)
+    , load(l)
   {}
 
   action_type type;
 
   websocketpp::connection_hdl hdl;
   std::vector<subscribe_topic> topics;
+
+  std::map<std::string, map_value> load;
   //Json::Value msg_root;
 };
 

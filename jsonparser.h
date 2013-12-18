@@ -1,7 +1,6 @@
 #ifndef jsonparser_h_
 #define jsonparser_h_
 
-#include <json/json.h>
 #include "actions.h"
 
 action parseMessage(std::string load, connection_hdl con)
@@ -50,7 +49,34 @@ action parseMessage(std::string load, connection_hdl con)
 
     else if (type == "Message")
     {
-      //todo
+      Json::Value msg_load = root.get(1, NULL);
+      if (msg_load == NULL)
+      {
+        throw "Message Type specified, but no parameters given.\n";
+      }
+      Json::Value::Members param_names = msg_load.getMemberNames();
+
+      std::map<std::string, map_value> params;
+
+      for (int Json::Value::Members::iterator it = param_names.begin()
+        ; it < param_names.end(); ++it)
+      {
+        switch *it
+        {
+          case "level":
+          case "type":
+          case "port":
+          case "change":
+          case "name":
+          case "filename":
+          case "id":
+            if(!msg_load[*it].isString())
+            {
+              throw "Wrong format in Json Message\n";
+            }
+          //TODO
+        }
+      }
     }
     else
       throw "Mismatched Actiontype\n";
