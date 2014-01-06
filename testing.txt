@@ -1,0 +1,5 @@
+HTTP-Requests:
+
+You can use nc(netcat) to test the server's http response
+
+printf "GET / HTTP/1.1\r\nHost: 127.0.0.1\r\n\r\n" | nc -n -i 1 127.0.0.1 9002

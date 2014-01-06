@@ -75,7 +75,16 @@ public:
 
   void on_http(connection_hdl hdl)
   {
-    std::cout << "Sorry, Websocket Connections only.\n" << std::endl;
+    server::connection_ptr con = _server.get_con_from_hdl(hdl);
+
+    std::stringstream out;
+    out << "<!doctype html><html><body>Request: "
+      << con->get_resource()
+      << "</body></html>";
+
+    con->set_status(websocketpp::http::status_code::ok);
+    con->set_body(out.str());
+    std::cout << "Sorry, Websocket Connections only." << std::endl;
   }
 
   void on_open(connection_hdl hdl)

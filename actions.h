@@ -82,21 +82,22 @@ struct getValueImp<bool>
   static bool getValue(map_value* const value) {return value->data.b;}
 };
 
-/*Specialisation for bool type*/
+/*Specialisation for string type*/
 template<>
 struct getValueImp<std::string>
 {
-  static std::string getValue(map_value* const value) {return value->data.string;}
+  static std::string getValue(map_value* const value)
+    {return value->data.string;}
 };
 
-/*Specialisation for bool type*/
+/*Specialisation for integer type*/
 template<>
 struct getValueImp<int>
 {
   static int getValue(map_value* const value) {return value->data.integer;}
 };
 
-/*Specialisation for bool type*/
+/*Specialisation for double type*/
 template<>
 struct getValueImp<double>
 {

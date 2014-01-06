@@ -1,0 +1,19 @@
+This is a step-by-step instruction to install the JsonCpp library on Linux and
+Mac Os X:
+
+1. Download JsonCpp from http://jsoncpp.sourceforge.net/
+2. Unpack the tarball in a directory of your choice
+3. Follow the Building instructions in JsonCpps README. After doing so, there
+   should be the directories "include" and "libs" in the JsonCpp directory.
+4. You have to install the library to your system manually. In order to so, copy
+   the contents of include to /opt/local/include
+
+    cp -R include/json /opt/local/include
+
+   Additionally, copy the static and dynamic libraries to /opt/local/libs and
+   rename them accordingly:
+
+    cp libs/YOURLIBRARYDIR/YOURLIBRARYNAME.a /opt/local/libs/libjsoncpp.a
+    cp libs/YOURLIBRARYDIR/YOURLIBRARYNAME.dylib /opt/local/libs/libjsoncpp.dylib
+
+That's it, now you're set to use JsonCpp.
