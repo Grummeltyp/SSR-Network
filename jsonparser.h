@@ -27,7 +27,7 @@ std::map<std::string, int> paramNumbers
   {"position", 17}
 };
 
-action parseMessage(std::string load, connection_hdl con)
+struct action parseMessage(std::string load, connection_hdl con)
 {
   Json::Value root;
   Json::Reader reader;
@@ -55,18 +55,21 @@ action parseMessage(std::string load, connection_hdl con)
       std::vector<subscribe_topic> topic_v;
       for (unsigned int i = 0; i < topics.size(); ++i)
       {
+        std::cout << "Topic Number" << i+1<< std::endl;
         std::string current = topics[i].asString();
-        if (current == "Sources") topic_v[i] = SOURCES;
-        else if (current == "Global") topic_v[i] = GLOBAL;
-        else if (current == "Reference") topic_v[i] = REFERENCE;
-        else if (current == "Masterlevel") topic_v[i] = MASTERLEVEL;
-        else if (current == "Sourcelevel") topic_v[i] = SOURCELEVEL;
-        else if (current == "Loudspeakerlevel") topic_v[i] = LOUDSPEAKERLEVEL;
+        if (current == "Sources") topic_v.push_back(SOURCES);
+        else if (current == "Global") topic_v.push_back(GLOBAL);
+        else if (current == "Reference") topic_v.push_back(REFERENCE);
+        else if (current == "Masterlevel") topic_v.push_back(MASTERLEVEL);
+        else if (current == "Sourcelevel") topic_v.push_back(SOURCELEVEL);
+        else if (current == "Loudspeakerlevel")
+          topic_v.push_back(LOUDSPEAKERLEVEL);
         else
         {
           throw "Invalid Topic Name\n";
         }
       }
+      std::cout << "Returning from Parser" << std::endl;
       if (sub) return action(SUBSCRIBE, con, topic_v);
       return action(UNSUBSCRIBE, con, topic_v);
     }

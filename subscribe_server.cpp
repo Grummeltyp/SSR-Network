@@ -119,8 +119,9 @@ public:
   {
     std::cout << "on_message" <<std::endl;
     std::string incoming = msg->get_payload();
+    std::cout << incoming <<std::endl;
     struct action newAction = parseMessage(incoming, hdl);
-
+    std::cout << "Message parsed" << std::endl;
     process_action(newAction);
 
     // // queue message up for sending by processing thread

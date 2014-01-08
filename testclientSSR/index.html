@@ -1,0 +1,36 @@
+<!DOCTYPE HTML>
+<html>
+  <head>
+    <title>SSR-Network Testclient</title>
+    <script language = "JavaScript">
+      function WSclient()
+      {
+        if ("WebSocket" in window)
+        {
+          // alert("WebSocket supported!");
+          var WS = new WebSocket("ws://localhost:9002");
+          WS.onopen = function()
+          {
+            var msg =
+            {
+              Type : "Subscribe",
+              Topics : ["Sources","Reference"]
+            }
+
+            WS.send(JSON.stringify(msg));
+          }
+        }
+        else
+        {
+          alert("Websocket not supported!");
+        }
+      }
+    </script>
+  </head>
+
+  <body>
+    <div id="sse">
+      <a href="javascript:WSclient()">Run Websocket</a>
+    </div>
+  </body>
+</html>
