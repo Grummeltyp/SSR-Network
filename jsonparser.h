@@ -32,8 +32,7 @@ struct action parseMessage(std::string load, connection_hdl con)
   Json::Value root;
   Json::Reader reader;
 
-  try
-  {
+
     bool parsingSuccessful = reader.parse(load, root);
     if (!parsingSuccessful)
       {
@@ -165,15 +164,6 @@ struct action parseMessage(std::string load, connection_hdl con)
     }
     else
       throw "Mismatched Actiontype\n";
-  }
-  catch (std::string e)
-  {
-    std::cout << e << std::endl;
-  }
-  catch (std::exception& e)
-  {
-    std::cout << e.what() << std::endl;
-  }
 }
 
 #endif /* jsonparser_h_ */

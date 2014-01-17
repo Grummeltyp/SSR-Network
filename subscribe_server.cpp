@@ -117,12 +117,23 @@ public:
 
   void on_message(connection_hdl hdl, server::message_ptr msg)
   {
-    std::cout << "on_message" <<std::endl;
-    std::string incoming = msg->get_payload();
-    std::cout << incoming <<std::endl;
-    struct action newAction = parseMessage(incoming, hdl);
-    std::cout << "Message parsed" << std::endl;
-    process_action(newAction);
+    try
+    {
+      std::cout << "on_message" <<std::endl;
+      std::string incoming = msg->get_payload();
+      std::cout << incoming <<std::endl;
+      struct action newAction = parseMessage(incoming, hdl);
+      std::cout << "Message parsed" << std::endl;
+      process_action(newAction);
+    }
+    catch (std::string e)
+    {
+      std::cout << e << std::endl;
+    }
+    catch (std::exception& e)
+    {
+      std::cout << e.what() << std::endl;
+    }
 
     // // queue message up for sending by processing thread
     // unique_lock<mutex> lock(_action_lock);
