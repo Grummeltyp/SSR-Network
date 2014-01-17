@@ -239,26 +239,26 @@ public:
   //   }
   // }
 
-void update_scene()
-{
-  while (1)
-  {
-    server::message_ptr messageToSend;
-    //std::string teststring = "This is a Test.";
-    //messageToSend->set_payload(teststring);
-    //wait for 100 ms
-    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+// void update_scene()
+// {
+//   while (1)
+//   {
+//     server::message_ptr messageToSend;
+//     //std::string teststring = "This is a Test.";
+//     //messageToSend->set_payload(teststring);
+//     //wait for 100 ms
+//     std::this_thread::sleep_for(std::chrono::milliseconds(100));
 
-    unique_lock<mutex> lock(_connection_lock);
+//     unique_lock<mutex> lock(_connection_lock);
 
 
-    con_list::iterator it;
-    for (it = _connections.begin(); it != _connections.end(); ++it)
-    {
-      _server.send(*it,messageToSend);
-    }
-  }
-}
+//     con_list::iterator it;
+//     for (it = _connections.begin(); it != _connections.end(); ++it)
+//     {
+//       _server.send(*it,messageToSend);
+//     }
+//   }
+// }
 private:
     typedef std::set<connection_hdl,std::owner_less<connection_hdl>> con_list;
 
@@ -294,7 +294,7 @@ int main()
   // thread processing_t(bind(&SubscribeServer::process_messages,&server));
 
   // Start a thread to run the update loop
-  thread update_t(bind(&SubscribeServer::update_scene,&server));
+  // thread update_t(bind(&SubscribeServer::update_scene,&server));
 
   // Run the asio loop with the main thread
   std::cout << "TestServer running..." << std::endl;
@@ -302,7 +302,7 @@ int main()
 
 
   // processing_t.join();
-  update_t.join();
+  // update_t.join();
 
   }
   catch (std::exception & e)

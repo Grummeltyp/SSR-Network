@@ -13,7 +13,7 @@ Mac Os X:
    Additionally, copy the static and dynamic libraries to /opt/local/libs and
    rename them accordingly:
 
-    cp libs/YOURLIBRARYDIR/YOURLIBRARYNAME.a /opt/local/libs/libjsoncpp.a
-    cp libs/YOURLIBRARYDIR/YOURLIBRARYNAME.dylib /opt/local/libs/libjsoncpp.dylib
+    cp libs/<YOURLIBRARYDIR>/<YOURLIBRARYNAME>.a /opt/local/libs/libjsoncpp.a
+    cp libs/<YOURLIBRARYDIR>/<YOURLIBRARYNAME>.dylib /opt/local/libs/libjsoncpp.dylib
 
 That's it, now you're set to use JsonCpp.
